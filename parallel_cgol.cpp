@@ -16,9 +16,16 @@
 #include <fstream>
 #include <unordered_set>
 #include <time.h>
+#include <mutex>
+#include "taskflow/taskflow/taskflow.hpp"
 
 int COLS = 0;
 int ROWS = 0;
+
+tf::Taskflow taskflow;
+tf::Executor executor;
+
+std::mutex mutex;
 
 //////////////////////////////////////////////////////////////////////
 // FROM https://stackoverflow.com/a/29855973 ////////////////////////
@@ -144,20 +151,25 @@ int_vector_set get_neighbours(std::vector<std::vector<char>> cells, std::vector<
 
 int_vector_set get_all_living_cells(std::vector<std::vector<char>> cells) {
     // CGOL HELPER FUNCTION
-    // walk through matrix and find location of all alive cells
-    // populate hashset of alive cells with 2 member int array
-    // representing coords of each live cell
+    // spawn thread for each row in cells, parallelly walk through
+    // each row and populate hashset of alive cells with 2 member 
+    // int vector representing coords of each live cell
     int_vector_set alive;
     
-    for(int i=0; i<cells.size(); i++) {
+    taskflow.for_each_index(0, (int)cells.size(), 1, [&] (int i) {
         std::vector<char> row = cells[i];
         for(int j=0; j<row.size(); j++) {
-            if(cells[i][j] == 'X') {
+            if(cells[i][j] == 'X') {       
+                mutex.lock();
                 alive.insert(std::vector<int>{i,j});
+                mutex.unlock();
             }
         }
-    }
+    });
     
+    executor.run(taskflow).wait();
+    taskflow.clear();
+
     return alive;
 }
 
@@ -167,7 +179,7 @@ int_vector_set get_dead_of_interest(std::vector<std::vector<char>> cells, int_ve
     // cells OF INTEREST (i.e. dead cells that neighbour currently
     // live cells, because all other dead stay dead
     int_vector_set dead_of_interest;
-    
+
     for(std::vector<int> coord : alive) {
         int_vector_set neighbours = get_neighbours(cells, coord, '-');
         for(std::vector<int> neighbour : neighbours) {
