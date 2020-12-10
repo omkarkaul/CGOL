@@ -26,12 +26,21 @@ int mod(int a, int b) {
     return r < 0 ? r + abs(b) : r;
 }
 
-std::vector<std::vector<char>> read_input_file() {
+std::vector<std::vector<char>> read_input_file(std::string filename) {
     // reads and input state from input.txt and builds the cells matrix
     
     std::vector<std::vector<char>> cells;
-    std::ifstream file("./glider_gun.txt");
-    
+
+    // open file
+    std::ifstream file;
+    file.open("./" + filename);
+
+    // exit if file doesn't exist
+    if(!file.is_open()) {
+      perror("Error open");
+      exit(EXIT_FAILURE);
+    }
+
     // read input file line by line
     std::string line_buffer;
     while(std::getline(file, line_buffer)) {
@@ -69,7 +78,7 @@ void pretty_print(std::vector<std::vector<char>> cells) {
     std::cout << std::endl;
 }
 
-std::unordered_set<int*> get_neighbours(std::vector<std::vector<char>> cells, int* coord, char state=NULL) {
+std::unordered_set<int*> get_neighbours(std::vector<std::vector<char>> cells, int* coord) {
     // CGOL HELPER FUNCTION
     // gets all neighbours of a specific state, for a particular cell
     // states : 'X' (alive), '-' (dead), NULL (both, default)
@@ -80,28 +89,38 @@ std::unordered_set<int*> get_neighbours(std::vector<std::vector<char>> cells, in
     int i = coord[0];
     int j = coord[1];
     
-    if(state) {
-        // either alive or deadr
-        if(cells[mod(i-1,ROWS)][mod(j,COLS)] == state) {neighbours.insert(new int[2]{mod(i-1,ROWS), mod(j,COLS) });} // NORTH NEIGHBOUR
-        if(cells[mod(i-1,ROWS)][mod((j+1),COLS)] == state) {neighbours.insert(new int[2]{mod(i-1,ROWS),mod(j+1,COLS)}); } // NORTHWEST NEIGHBOUR
-        if(cells[mod(i, ROWS)][mod(j+1, COLS)] == state) {neighbours.insert(new int[2]{mod(i,ROWS), mod(j+1, COLS)}); } // EAST NEIGHBOUR
-        if(cells[mod(i+1, ROWS)][mod(j+1, COLS)] == state) {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j+1, COLS)}); } // SOUTHEAST NEIGHBOUR
-        if(cells[mod(i+1, ROWS)][mod(j, COLS)] == state) {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j, COLS)}); } // SOUTH NEIGHBOUR
-        if(cells[mod(i+1, ROWS)][mod(j-1, COLS)] == state) {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j-1, COLS)}); } // SOUTHWEST NEIGHBOUR
-        if(cells[mod(i, ROWS)][mod(j-1, COLS)] == state) {neighbours.insert(new int[2]{mod(i,ROWS), mod(j-1, COLS)}); } // WEST NEIGHBOUR
-        if(cells[mod(i-1, ROWS)][mod(j-1, COLS)] == state) {neighbours.insert(new int[2]{mod(i-1,ROWS), mod(j-1, COLS)}); } // NORTHWEST NEIGHBOUR
-    }
-    else {
-        // both alive and dead
-        if(cells[mod(i-1,ROWS)][mod(j,COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i-1,ROWS), mod(j,COLS) });} // NORTH NEIGHBOUR
-        if(cells[mod(i-1,ROWS)][mod((j+1),COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i-1,ROWS),mod(j+1,COLS)}); } // NORTHWEST NEIGHBOUR
-        if(cells[mod(i, ROWS)][mod(j+1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i,ROWS), mod(j+1, COLS)}); } // EAST NEIGHBOUR
-        if(cells[mod(i+1, ROWS)][mod(j+1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j+1, COLS)}); } // SOUTHEAST NEIGHBOUR
-        if(cells[mod(i+1, ROWS)][mod(j, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j, COLS)}); } // SOUTH NEIGHBOUR
-        if(cells[mod(i+1, ROWS)][mod(j-1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j-1, COLS)}); } // SOUTHWEST NEIGHBOUR
-        if(cells[mod(i, ROWS)][mod(j-1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i,ROWS), mod(j-1, COLS)}); } // WEST NEIGHBOUR
-        if(cells[mod(i-1, ROWS)][mod(j-1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i-1,ROWS), mod(j-1, COLS)}); } // NORTHWEST NEIGHBOUR
-    }
+    // both alive and dead
+    if(cells[mod(i-1,ROWS)][mod(j,COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i-1,ROWS), mod(j,COLS) });} // NORTH NEIGHBOUR
+    if(cells[mod(i-1,ROWS)][mod((j+1),COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i-1,ROWS),mod(j+1,COLS)}); } // NORTHWEST NEIGHBOUR
+    if(cells[mod(i, ROWS)][mod(j+1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i,ROWS), mod(j+1, COLS)}); } // EAST NEIGHBOUR
+    if(cells[mod(i+1, ROWS)][mod(j+1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j+1, COLS)}); } // SOUTHEAST NEIGHBOUR
+    if(cells[mod(i+1, ROWS)][mod(j, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j, COLS)}); } // SOUTH NEIGHBOUR
+    if(cells[mod(i+1, ROWS)][mod(j-1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j-1, COLS)}); } // SOUTHWEST NEIGHBOUR
+    if(cells[mod(i, ROWS)][mod(j-1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i,ROWS), mod(j-1, COLS)}); } // WEST NEIGHBOUR
+    if(cells[mod(i-1, ROWS)][mod(j-1, COLS)] == 'X' or '-') {neighbours.insert(new int[2]{mod(i-1,ROWS), mod(j-1, COLS)}); } // NORTHWEST NEIGHBOUR
+}
+
+std::unordered_set<int*> get_neighbours(std::vector<std::vector<char>> cells, int* coord, char state) {
+    // CGOL HELPER FUNCTION
+    // gets all neighbours of a specific state, for a particular cell
+    // states : 'X' (alive), '-' (dead), NULL (both, default)
+    // modulo coordinate lookup by the number of cols/rows to support wrap around
+    // i.e. ((i-1)%ROWS, ((j+1)%COLS) for NORTHWEST NEIGHBOUR
+    
+    std::unordered_set<int*> neighbours;
+    int i = coord[0];
+    int j = coord[1];
+    
+    
+    // either alive or deadr
+    if(cells[mod(i-1,ROWS)][mod(j,COLS)] == state) {neighbours.insert(new int[2]{mod(i-1,ROWS), mod(j,COLS) });} // NORTH NEIGHBOUR
+    if(cells[mod(i-1,ROWS)][mod((j+1),COLS)] == state) {neighbours.insert(new int[2]{mod(i-1,ROWS),mod(j+1,COLS)}); } // NORTHWEST NEIGHBOUR
+    if(cells[mod(i, ROWS)][mod(j+1, COLS)] == state) {neighbours.insert(new int[2]{mod(i,ROWS), mod(j+1, COLS)}); } // EAST NEIGHBOUR
+    if(cells[mod(i+1, ROWS)][mod(j+1, COLS)] == state) {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j+1, COLS)}); } // SOUTHEAST NEIGHBOUR
+    if(cells[mod(i+1, ROWS)][mod(j, COLS)] == state) {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j, COLS)}); } // SOUTH NEIGHBOUR
+    if(cells[mod(i+1, ROWS)][mod(j-1, COLS)] == state) {neighbours.insert(new int[2]{mod(i+1,ROWS), mod(j-1, COLS)}); } // SOUTHWEST NEIGHBOUR
+    if(cells[mod(i, ROWS)][mod(j-1, COLS)] == state) {neighbours.insert(new int[2]{mod(i,ROWS), mod(j-1, COLS)}); } // WEST NEIGHBOUR
+    if(cells[mod(i-1, ROWS)][mod(j-1, COLS)] == state) {neighbours.insert(new int[2]{mod(i-1,ROWS), mod(j-1, COLS)}); } // NORTHWEST NEIGHBOUR
     
     return neighbours;
 }
@@ -153,13 +172,16 @@ std::vector<std::vector<char>> perform_update(std::vector<std::vector<char>> cel
 
 void CGOL(std::vector<std::vector<char>> cells, int iterations, bool verbose) {
     // performs CGOL
-    std::unordered_set<int*> alive_cells = get_all_living_cells(cells);
-    std::unordered_set<int*> dead_of_interest = get_dead_of_interest(cells, alive_cells);
     
+    pretty_print(cells);
+
     // do main work
     while(iterations > 0) {
         iterations--;
-        
+            
+        std::unordered_set<int*> alive_cells = get_all_living_cells(cells);
+        std::unordered_set<int*> dead_of_interest = get_dead_of_interest(cells, alive_cells);
+
         std::unordered_set<int*> new_alive_cells;
         std::unordered_set<int*> live_cells_to_die;
 
@@ -181,22 +203,23 @@ void CGOL(std::vector<std::vector<char>> cells, int iterations, bool verbose) {
             }
         }
         
-        pretty_print(cells);
         cells = perform_update(cells, new_alive_cells, live_cells_to_die);
         
-        alive_cells = get_all_living_cells(cells);
-        dead_of_interest = get_dead_of_interest(cells, alive_cells);
-        // TODO: if cells full or empty before iterations are over, break out of loop and output final state
-        // if(cells_are_full(cells)) { break; }
+        if(verbose) { pretty_print(cells); }
     }
     
-    if(verbose) { pretty_print(cells); }
+    if(!verbose) { pretty_print(cells); }
 }
 
 int main(int argc, char* argv[]) {
     int iterations = 1;
     bool verbose = false;
+    std::string filename;
     
+    if(argc >= 2) {
+        filename = argv[1];
+    }
+
     // check if iterations are passed as an arg
     if(argc >=3) {
         if(std::string(argv[1]) == "-i") {
@@ -204,14 +227,21 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    // check if verbose mode is passed as an arg
+    // get number of iterations
     if(argc >= 4) {
-        if(std::string(argv[3]) == "-v") {
+        iterations = std::atoi(argv[3]);
+    }
+
+    // check if verbose mode is passed as an arg
+    if(argc >= 5) {
+        if(std::string(argv[4]) == "-v") {
             verbose = true;
         }
     }
     
-    std::vector<std::vector<char>> cells = read_input_file(); // generate char matrix from input file
+    std::vector<std::vector<char>> cells = read_input_file(filename); // generate char matrix from input file
+
+    
     CGOL(cells, iterations, verbose); // perform CGOL
 
     return 0;
