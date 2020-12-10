@@ -1,3 +1,4 @@
 /taskflow
 /.vscode
 main.o
+parallel_cgol.o
