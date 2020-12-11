@@ -180,22 +180,35 @@ int_vector_set get_dead_of_interest(std::vector<std::vector<char>> cells, int_ve
     // live cells, because all other dead stay dead
     int_vector_set dead_of_interest;
 
-    for(std::vector<int> coord : alive) {
+    taskflow.for_each(alive.begin(), alive.end(), [&] (std::vector<int> coord) {
         int_vector_set neighbours = get_neighbours(cells, coord, '-');
         for(std::vector<int> neighbour : neighbours) {
+            mutex.lock();
             dead_of_interest.insert(neighbour);
+            mutex.unlock();
         }
-    }
+    });
     
+    executor.run(taskflow).wait();
+    taskflow.clear();
+
     return dead_of_interest;
 }
 
 std::vector<std::vector<char>> perform_update(std::vector<std::vector<char>> cells, int_vector_set new_alive, int_vector_set new_dead) {
     // birth new live cells
-    for(std::vector<int> coord : new_alive) { cells[coord[0]][coord[1]] = 'X'; }
+    taskflow.for_each(new_alive.begin(), new_alive.end(), [&] (std::vector<int> coord) {
+        cells[coord[0]][coord[1]] = 'X';
+    });
+
     // kill other cells
-    for(std::vector<int> coord : new_dead) { cells[coord[0]][coord[1]] = '-'; }
-    
+    taskflow.for_each(new_dead.begin(), new_dead.end(), [&] (std::vector<int> coord) {
+        cells[coord[0]][coord[1]] = '-';
+    });
+
+    executor.run(taskflow).wait();
+    taskflow.clear();
+
     return cells;
 }
 
@@ -215,22 +228,39 @@ void CGOL(std::vector<std::vector<char>> cells, int iterations, bool verbose) {
         int_vector_set live_cells_to_die;
 
         // RULE 1 (updates new_alive_cells)
-        for(std::vector<int> live_coord : alive_cells) {
+        tf::Task A = taskflow.for_each(alive_cells.begin(), alive_cells.end(), [&] (std::vector<int> live_coord) {
             int num_of_live_neighbours = (int)get_neighbours(cells, live_coord, 'X').size();
-            if(2 <= num_of_live_neighbours && num_of_live_neighbours <= 3) { new_alive_cells.insert(live_coord); }
-        }
-        
+            if(2 <= num_of_live_neighbours && num_of_live_neighbours <= 3) {
+                mutex.lock();
+                new_alive_cells.insert(live_coord); 
+                mutex.unlock();
+            }
+        });
+
         // RULE 2 (updates new_alive_cells)
-        for(std::vector<int> relevant_dead_coord : dead_of_interest) {
-            if(get_neighbours(cells, relevant_dead_coord, 'X').size() == 3) { new_alive_cells.insert(relevant_dead_coord); }
-        }
+        tf::Task B =taskflow.for_each(dead_of_interest.begin(), dead_of_interest.end(), [&] (std::vector<int> relevant_dead_coord) {
+            if(get_neighbours(cells, relevant_dead_coord, 'X').size() == 3) {
+                mutex.lock();
+                new_alive_cells.insert(relevant_dead_coord); 
+                mutex.unlock();
+            }
+        });
         
         // RULE 3 (updates live_cells_to_die)
-        for(std::vector<int> live_cell : alive_cells) {
+        tf::Task C = taskflow.for_each(alive_cells.begin(), alive_cells.end(), [&] (std::vector<int> live_cell) {
             if(new_alive_cells.find(live_cell) == new_alive_cells.end()) {
+                mutex.lock();
                 live_cells_to_die.insert(live_cell);
+                mutex.unlock();
             }
-        }
+        });
+
+
+        A.precede(B);
+        B.precede(C);
+
+        executor.run(taskflow).wait();
+        taskflow.clear();
         
         cells = perform_update(cells, new_alive_cells, live_cells_to_die);
         
